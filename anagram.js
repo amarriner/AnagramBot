@@ -72,7 +72,6 @@ function get_anagram(letters) {
 
 // Use the Wordnik URL to get random words
 function get_word() {
-
    console.log(' - Getting random words from Wordnik');
 
    restClient.get(wordnikUrl,
@@ -102,13 +101,29 @@ function get_word() {
 // Tweets the anagram parameter
 function tweet(anagram) {
    console.log(' - Tweeting anagram ' + anagram + ' for ' + word);
+
    t.post('statuses/update', { status: anagram + '\n\nReply to solve #Anagram' }, function(err, data, response) {
       if (err)
          console.log(' - ' + err);
 
+      // After tweeting, wait two hours for someone to solve it correctly, after which time start a new anagram
       clearInterval(interval);
-      interval = setTimeout(function() { get_word() }, 600000);
+      interval = setTimeout(function() { get_word() }, 2 * 60 * 60 * 1000);
    }); 
+}
+
+// Posts the last answer because no one solved it, and start a new one
+function tweet_new() {
+   console.log(' - No one solved the last anagram, creating new');
+
+   t.post('statuses/update', { status: 'The solution to the last anagram (' + anagram + ') was ' + word }, function(err, data, response) {
+      if (err)
+         console.log(' - ' + err);
+
+      // Tweet a new one in 5 seconds
+      clearInterval(interval);
+      interval = setTimeout(function() { get_word() }, 5000);
+   }
 }
 
 // Favorites and replies to the winning tweet
@@ -125,6 +140,7 @@ function tweet_winner(tweet) {
       if (err)
          console.log(' - Reply error: ' + err);
 
+      // Get a new anagram in 5 seconds
       clearInterval(interval);
       interval = setTimeout(function() { get_word() }, 5000);
    });
