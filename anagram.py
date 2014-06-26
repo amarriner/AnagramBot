@@ -1,6 +1,11 @@
 #!/usr/bin/python
 
+import argparse
+import random
+import sys
+
 # http://stackoverflow.com/questions/55210/algorithm-to-generate-anagrams
+# Modified to take only one input at a time from the command-line instead of interactively
 
 MIN_WORD_SIZE = 4 # min size of a word in the output
 
@@ -51,19 +56,22 @@ def load_dictionary(path):
     return result
 
 def main():
-    print 'Loading word list.'
+    parser = argparse.ArgumentParser(description='Get letters to make an anagram of')
+    parser.add_argument('letters')
+    letters = parser.parse_args().letters.lower().replace(' ', '')
+
     words = load_dictionary('words.txt')
-    while True:
-        letters = raw_input('Enter letters: ')
-        letters = letters.lower()
-        letters = letters.replace(' ', '')
-        if not letters:
-            break
-        count = 0
-        for word in words.anagram(letters):
-            print word
-            count += 1
-        print '%d results.' % count
+
+    anagrams = []
+    for word in words.anagram(letters):
+        anagrams.append(word)
+
+    if len(anagrams) > 0:
+       sys.stdout.write(random.choice(anagrams))
+       sys.exit()
+    else:
+       sys.stderr.write('__ERROR__')
+       sys.exit(1)
 
 if __name__ == '__main__':
     main()
