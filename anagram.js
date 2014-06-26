@@ -36,8 +36,8 @@ stream.on('tweet', function(tweet) {
    if (tweet.user.screen_name.toLowerCase() != 'anagrambot') {
 
       // If the current word/solution is found in the tweet, the user who replied is the winner
-      var re = new RegExp('\\b' + word + '\\b');
-      if (tweet.text.match(re))
+      var re = new RegExp('\\b' + word.toLowerCase() + '\\b');
+      if (tweet.text.toLowerCase().match(re))
           tweet_winner(tweet);
    }
 });
@@ -51,6 +51,20 @@ var wordnikUrl = 'http://api.wordnik.com/v4/words.json/randomWords?' +
                    'limit=50&'                                       +
                    'api_key=' + k.wordnikApiKey;
 
+// Capitalizes every word in the given string
+function capitalize(str) {
+   var result = '';
+
+   for (var i = 0; i < str.split(' ').length; i++) {
+      if (i > 0)
+         result = result + ' ';
+
+      result = result + str.split(' ')[i].charAt(0).toUpperCase() + str.split(' ')[i].slice(1);
+   }
+
+   return result;
+}
+
 // Function that runs a python script to create an anagram from the letters parameter
 function get_anagram(letters) {
    console.log(' - Getting anagram for ' + letters);
@@ -62,11 +76,18 @@ function get_anagram(letters) {
          return;
       }
 
-      anagram = stdout;
+      anagram = capitalize(stdout);
+
+      // Check to make sure we get a different word as an anagram, if not get a new one
+      if (anagram.toLowerCase() == word.toLowerCase()) {
+         console.log(' - Anagram and solution are the same!');
+         clearInterval(interval);
+         interval = setTimeout(function() { get_word() }, 10000);
+         return;
+      }
 
       // If no error, tweet the anagram
       tweet(anagram);
-
    });
 }
 
@@ -85,9 +106,10 @@ function get_word() {
             word = json.splice(Math.floor(Math.random() * json.length),1)[0].word;
 
          // If we have a good word, make an anagram out of it
-         if (word.indexOf('-') == -1) 
+         if (word.indexOf('-') == -1) {
             console.log(' - Found word: ' + word);
             get_anagram(word);
+         }
          // Otherwise wait 10 seconds and try again
          else {
             console.log(' - No valid word found, trying again...');
@@ -123,19 +145,19 @@ function tweet_new() {
       // Tweet a new one in 5 seconds
       clearInterval(interval);
       interval = setTimeout(function() { get_word() }, 5000);
-   }
+   });
 }
 
 // Favorites and replies to the winning tweet
 function tweet_winner(tweet) {
-   console.log(' - @' + tweet.user.screen_name + ' tweeted the correct answer, replying and favoriting');
+   console.log(' - @' + tweet.user.screen_name + ' tweeted the correct answer, replying and favoriting (' + tweet.id_str + ')');
 
-   t.post('favorites/create/' + tweet.id_str, function  (err, data, response) {
+   t.post('favorites/create', { id: tweet.id_str, id_str: tweet.id_str }, function (err, data, response) {
       if (err)
          console.log(' - Favorite error: ' + err);
    });
 
-   t.post('statuses/update', { status: '@' + tweet.user.screen_name + ' got the correct answer (' + word + ')!',
+   t.post('statuses/update', { status: '@' + tweet.user.screen_name + ' got the correct answer (' + capitalize(word) + ')!',
                                in_reply_to_status_id_str: tweet.id_str }, function (err, data, response) {
       if (err)
          console.log(' - Reply error: ' + err);
