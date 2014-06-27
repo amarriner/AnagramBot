@@ -130,7 +130,7 @@ function tweet(anagram) {
 
       // After tweeting, wait two hours for someone to solve it correctly, after which time start a new anagram
       clearInterval(interval);
-      interval = setTimeout(function() { get_word() }, 2 * 60 * 60 * 1000);
+      interval = setTimeout(function() { tweet_new() }, 2 * 60 * 60 * 1000);
    }); 
 }
 
@@ -157,7 +157,7 @@ function tweet_winner(tweet) {
          console.log(' - Favorite error: ' + err);
    });
 
-   t.post('statuses/update', { status: '@' + tweet.user.screen_name + ' got the correct answer (' + capitalize(word) + ')!',
+   t.post('statuses/update', { status: '.@' + tweet.user.screen_name + ' got the correct answer (' + capitalize(word) + ')!',
                                in_reply_to_status_id_str: tweet.id_str }, function (err, data, response) {
       if (err)
          console.log(' - Reply error: ' + err);
